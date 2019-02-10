@@ -1,4 +1,4 @@
-<b>x86_64 Projects<b><br />
+<b>x86_64 Projects</b><br />
 I am currently trying to learn the 64 bit version of the x86 assembly language.
 
 My current project is a postfix notation calculator that prints the result in hexadecimal. For example, 1 2 + would print 0x03.
