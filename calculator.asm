@@ -1,6 +1,8 @@
 section .data
 	welcome db "Enter a postfix expression: "
 	invalidString db "Invalid expression :(", 0x0A
+	hex db "The answer in hexadecimal: "
+	decimal db "The answer in decimal: "
 	ascii_nums db "0123456789"
 	newLine db 0x0A
 	equals db 0x3D
@@ -74,6 +76,22 @@ _printNewLine:
 	mov rdi, 1
 	mov rsi, newLine
 	mov rdx, 1
+	syscall
+	ret
+
+_printDecAns:
+	mov rax, 1
+	mov rdi, 1
+	mov rsi, decimal
+	mov rdx, 23
+	syscall
+	ret
+
+_printHexAns:
+	mov rax, 1
+	mov rdi, 1
+	mov rsi, hex
+	mov rdx, 27
 	syscall
 	ret
 
@@ -158,6 +176,71 @@ printed:
 	pop r9
 	pop r10
 	ret
+
+_printDec:
+	push rcx
+	push rdx
+	and rcx, 0
+	and rdx, 0
+	and rbx, 0
+printDecLoop:
+	call _div10
+	and r11, 0
+	mov r11, r12
+	and r15, 0
+	mov r15, r14
+	call _usr_push
+	add rbx, 1
+	cmp r11, rcx
+	jne printDecLoop
+printLoop:
+	call _usr_pop
+	and rdx, 0
+	mov rdx, [zero_ascii]
+	and rdx, 0xFF
+	add rdx, r15
+	and r8, 0
+	mov r8, rdx
+
+	call _printR8
+	sub rbx, 1
+	cmp rbx, rcx
+	jg printLoop
+
+	pop rdx
+	pop rcx
+	ret
+
+	;R12 quotient, R14 remainder
+_div10:
+	push r9
+	push r13
+	push r15
+	and r15, 0
+	add r15, 10
+
+	and r14, 0
+	and r13, 0
+	and r9, 0
+
+	sub r9, 10
+	and r12, 0
+	sub r12, 1
+div10Loop:
+	add r12, 1
+	add r11, r9
+	cmp r11, r13
+	jge div10Loop
+	add r11, r15
+	mov r14, r11
+	pop r15
+	pop r13
+	pop r9
+	ret
+
+
+
+
 
 _printR8:
 	push r11
@@ -541,7 +624,14 @@ isEqual:
 	and r11, 0
 	mov r11, r15
 	mov [finalAnswer], r11
+	call _printHexAns
+	and r11, 0
+	mov r11, [finalAnswer]
 	call _printAnswer
+	call _printNewLine
+	call _printDecAns
+	mov r11, [finalAnswer]
+	call _printDec
 	call _printNewLine
 	call _haltProgram
 	ret
@@ -586,6 +676,15 @@ underflow:
 done_pop:
 	pop r10
 	pop r9
+	ret
+
+_getTop:
+	push r11
+	and r11, 0
+	mov r11, [usr_stack_ptr]
+	mov r11, [r11]
+	call _printAnswer
+	pop r11
 	ret
 
 ;checks if stack is empty: 0-empty, 1-notempty
