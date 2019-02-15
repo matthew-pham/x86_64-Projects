@@ -1,6 +1,8 @@
 section .data
 	welcome db "Enter a postfix expression: "
 	invalidString db "Invalid expression :(", 0x0A
+	hex db "The answer in hexadecimal: "
+	decimal db "The answer in decimal: "
 	ascii_nums db "0123456789"
 	newLine db 0x0A
 	equals db 0x3D
@@ -54,7 +56,7 @@ _haltProgram:
     syscall ; perform system call
 
 _printWelcome:
-	mov rax, 0x2000004 
+	mov rax, 0x2000004
 	mov rdi, 1
 	mov rsi, welcome
 	mov rdx, 28
@@ -62,7 +64,7 @@ _printWelcome:
 	ret
 
 _printInvalid: 
-	mov rax, 0x2000004 
+	mov rax, 0x2000004
 	mov rdi, 1
 	mov rsi, invalidString
 	mov rdx, 22
@@ -70,15 +72,31 @@ _printInvalid:
 	ret
 
 _printNewLine:
-	mov rax, 0x2000004 
+	mov rax, 0x2000004
 	mov rdi, 1
 	mov rsi, newLine
 	mov rdx, 1
 	syscall
 	ret
 
+_printDecAns:
+	mov rax, 0x2000004
+	mov rdi, 1
+	mov rsi, decimal
+	mov rdx, 23
+	syscall
+	ret
+
+_printHexAns:
+	mov rax, 0x2000004
+	mov rdi, 1
+	mov rsi, hex
+	mov rdx, 27
+	syscall
+	ret
+
 _getInput:
-	mov rax, 0x2000003 
+	mov rax, 0x2000003
 	mov rdi, 0
 	mov rsi, input
 	mov rdx, 64
@@ -159,9 +177,74 @@ printed:
 	pop r10
 	ret
 
+_printDec:
+	push r9
+	push r10
+	and r9, 0
+	and r10, 0
+	and r13, 0
+printDecLoop:
+	call _div10
+	and r11, 0
+	mov r11, r12
+	and r15, 0
+	mov r15, r14
+	call _usr_push
+	add r13, 1
+	cmp r11, r9
+	jne printDecLoop
+printLoop:
+	call _usr_pop
+	and r10, 0
+	mov r10, [rel zero_ascii]
+	and r10, 0xFF
+	add r10, r15
+	and r8, 0
+	mov r8, r10
+
+	call _printR8
+	sub r13, 1
+	cmp r13, r9
+	jg printLoop
+
+	pop r10
+	pop r9
+	ret
+
+	;R12 quotient, R14 remainder
+_div10:
+	push r9
+	push r13
+	push r15
+	and r15, 0
+	add r15, 10
+
+	and r14, 0
+	and r13, 0
+	and r9, 0
+
+	sub r9, 10
+	and r12, 0
+	sub r12, 1
+div10Loop:
+	add r12, 1
+	add r11, r9
+	cmp r11, r13
+	jge div10Loop
+	add r11, r15
+	mov r14, r11
+	pop r15
+	pop r13
+	pop r9
+	ret
+
+
+
+
+
 _printR8:
 	push r11
-	mov rax, 0x2000004 
+	mov rax, 0x2000004
 	mov rdi, 1
 	and rsi, 0
 	push r8
@@ -541,7 +624,14 @@ isEqual:
 	and r11, 0
 	mov r11, r15
 	mov [rel finalAnswer], r11
+	call _printHexAns
+	and r11, 0
+	mov r11, [rel finalAnswer]
 	call _printAnswer
+	call _printNewLine
+	call _printDecAns
+	mov r11, [rel finalAnswer]
+	call _printDec
 	call _printNewLine
 	call _haltProgram
 	ret
@@ -586,6 +676,15 @@ underflow:
 done_pop:
 	pop r10
 	pop r9
+	ret
+
+_getTop:
+	push r11
+	and r11, 0
+	mov r11, [rel usr_stack_ptr]
+	mov r11, [r11]
+	call _printAnswer
+	pop r11
 	ret
 
 ;checks if stack is empty: 0-empty, 1-notempty
